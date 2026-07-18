@@ -1,0 +1,11 @@
+build/bin
+node_modules
+frontend/dist
+
+.claude/
+.codex/
+CLAUDE.md
+AGENTS.md
+
+.DS_Store
+*.log
