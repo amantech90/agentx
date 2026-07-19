@@ -55,7 +55,7 @@ function showDownloadToast(platform) {
     toastMessage.textContent =
       selectedPlatform === "linux"
         ? "Agent X is available for macOS and Windows."
-        : "Taking you to the latest release on GitHub.";
+        : "Your download is starting…";
   }
 
   if (downloadToast) downloadToast.hidden = false;
@@ -132,11 +132,19 @@ function trackCurrentSection() {
 }
 
 const RELEASES_URL = "https://github.com/amantech90/agentx/releases/latest";
+const DIRECT_DOWNLOADS = {
+  macos: `${RELEASES_URL}/download/AgentX-macOS.zip`,
+  windows: `${RELEASES_URL}/download/AgentX-Windows-Setup.exe`,
+};
 
 document.querySelectorAll("[data-download]").forEach((button) => {
   button.addEventListener("click", () => {
-    showDownloadToast(button.dataset.download || "auto");
-    window.open(RELEASES_URL, "_blank", "noopener");
+    const platform = button.dataset.download || "auto";
+    const resolved = platform === "auto" ? detectPlatform() : platform;
+    showDownloadToast(platform);
+    const directURL = DIRECT_DOWNLOADS[resolved];
+    if (directURL) window.location.href = directURL;
+    else window.open(RELEASES_URL, "_blank", "noopener");
   });
 });
 
