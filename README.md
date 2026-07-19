@@ -51,6 +51,5 @@ go test ./...    # run the Go test suite
 
 ## License
 
-Source-available under the [Elastic License 2.0](LICENSE). You may use, copy,
-modify, and redistribute the code, but you may not offer it as a hosted or
-managed service. Copyright © 2026 Aman Singh.
+Open source under the [Apache License 2.0](LICENSE) — free to use, modify, and
+distribute, with an explicit patent grant. Copyright © 2026 Aman Singh.
