@@ -9,3 +9,12 @@ AGENTS.md
 
 .DS_Store
 *.log
+
+*.p12
+*.cer
+*.certSigningRequest
+*.provisionprofile
+*.mobileprovision
+AgentX-macOS.zip
+AgentX-Windows-Setup.exe
+notarize-upload.zip
