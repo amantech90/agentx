@@ -141,49 +141,14 @@
               </div>
             </div>
 
-            <div class="workspace-preview">
-              <aside class="workspace-devices" aria-label="Connected devices">
-                <p>Devices</p>
-                <div class="workspace-device">
-                  <span class="workspace-device__icon" aria-hidden="true">
-                    <svg viewBox="0 0 48 48"><rect x="10" y="10" width="28" height="19" rx="3"></rect><path d="M5 35h38"></path></svg>
-                  </span>
-                  <div><strong>Aman’s MacBook</strong><small>Codex · 2 projects</small></div>
-                </div>
-                <div class="workspace-device is-active">
-                  <span class="workspace-device__icon" aria-hidden="true">
-                    <svg viewBox="0 0 48 48"><rect x="10" y="10" width="28" height="19" rx="3"></rect><path d="M5 35h38"></path><circle cx="38" cy="10" r="4.5"></circle></svg>
-                  </span>
-                  <div><strong>Work PC</strong><small>Claude · Payments API</small></div>
-                </div>
-              </aside>
-
-              <section class="workspace-session" aria-label="Payments API session">
-                <header class="workspace-session__header">
-                  <div><p>Work PC</p><h2>Payments API</h2></div>
-                  <span class="provider-pill"><b>C</b> Claude</span>
-                </header>
-
-                <div class="session-thread">
-                  <article class="session-message session-message--user">
-                    <strong>You</strong>
-                    <p>Fix the webhook retry and run its tests.</p>
-                  </article>
-                  <article class="session-message session-message--agent">
-                    <strong>Claude</strong>
-                    <p>I found the stale event ID. Updating the retry path now.</p>
-                  </article>
-                </div>
-
-                <div class="session-status">
-                  <svg class="status-indicator" viewBox="0 0 18 18" aria-hidden="true">
-                    <circle class="status-indicator__ring" cx="9" cy="9" r="6"></circle>
-                    <circle class="status-indicator__dot" cx="9" cy="9" r="3"></circle>
-                  </svg>
-                  <div><strong>Running tests</strong><small>Work continues on your Work PC</small></div>
-                  <span>18 / 24</span>
-                </div>
-              </section>
+            <div class="app-frame__viewport">
+              <iframe
+                src="demo/index.html?embed"
+                title="Agent X live product demo"
+                loading="lazy"
+                tabindex="-1"
+                aria-hidden="true"
+              ></iframe>
             </div>
           </div>
         </div>

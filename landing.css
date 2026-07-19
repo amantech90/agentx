@@ -527,6 +527,22 @@ a:focus-visible {
   fill: var(--green);
 }
 
+.app-frame__viewport {
+  position: relative;
+  height: 500px;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.app-frame__viewport iframe {
+  width: 166.667%;
+  height: 166.667%;
+  border: 0;
+  pointer-events: none;
+  transform: scale(0.6);
+  transform-origin: 0 0;
+}
+
 .workspace-preview {
   display: grid;
   min-height: 440px;
