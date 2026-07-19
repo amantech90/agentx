@@ -37,8 +37,8 @@ func TestManagerCreatesAndReopensWorkspaceMetadata(t *testing.T) {
 	if err := json.Unmarshal(contents, &project); err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}
-	if project.ID != first.ID {
-		t.Fatalf("project id = %q, want %q", project.ID, first.ID)
+	if project.ID != first.ProjectID {
+		t.Fatalf("project id = %q, want %q", project.ID, first.ProjectID)
 	}
 
 	manager.now = func() time.Time { return time.Date(2026, 7, 19, 13, 0, 0, 0, time.UTC) }
@@ -46,14 +46,25 @@ func TestManagerCreatesAndReopensWorkspaceMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen error = %v", err)
 	}
-	if second.ID != first.ID {
-		t.Fatalf("reopen created a new id: got %q want %q", second.ID, first.ID)
+	if second.ID == first.ID {
+		t.Fatalf("Claude and Codex reused workspace id %q", first.ID)
+	}
+	if second.ProjectID == "" || second.ProjectID != first.ProjectID {
+		t.Fatalf("project ids differ: first=%q second=%q", first.ProjectID, second.ProjectID)
 	}
 	if second.ProviderID != "claude" {
 		t.Fatalf("provider id = %q", second.ProviderID)
 	}
 	if second.Name != "Booking Platform" {
 		t.Fatalf("workspace name = %q", second.Name)
+	}
+
+	reopenedCodex, err := manager.Open(root, "Booking Platform", "codex")
+	if err != nil {
+		t.Fatalf("reopen Codex error = %v", err)
+	}
+	if reopenedCodex.ID != first.ID {
+		t.Fatalf("Codex workspace id changed: got %q want %q", reopenedCodex.ID, first.ID)
 	}
 }
 

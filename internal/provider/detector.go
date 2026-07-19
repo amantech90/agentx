@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"agentx/internal/childproc"
 	"agentx/internal/model"
 )
 
@@ -55,6 +56,7 @@ func commandVersion(parent context.Context, path string) string {
 	defer cancel()
 
 	command := exec.CommandContext(ctx, path, "--version")
+	childproc.Configure(command)
 	command.Env = environmentWithExecutableDir(os.Environ(), filepath.Clean(path))
 	output, err := command.CombinedOutput()
 	if err != nil {

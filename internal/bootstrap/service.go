@@ -17,10 +17,32 @@ const appVersion = "0.1.0"
 type Service struct {
 	store    *config.Store
 	detector *provider.Detector
+	nearby   func() []model.Device
+	paired   func() []model.Device
 }
 
 func NewService(store *config.Store, detector *provider.Detector) *Service {
-	return &Service{store: store, detector: detector}
+	return &Service{
+		store: store, detector: detector,
+		nearby: func() []model.Device { return []model.Device{} },
+		paired: func() []model.Device { return []model.Device{} },
+	}
+}
+
+func (s *Service) SetNearbyProvider(provider func() []model.Device) {
+	if provider == nil {
+		s.nearby = func() []model.Device { return []model.Device{} }
+		return
+	}
+	s.nearby = provider
+}
+
+func (s *Service) SetPairedProvider(provider func() []model.Device) {
+	if provider == nil {
+		s.paired = func() []model.Device { return []model.Device{} }
+		return
+	}
+	s.paired = provider
 }
 
 func (s *Service) State(ctx context.Context) (model.BootstrapState, error) {
@@ -82,8 +104,10 @@ func (s *Service) stateFromProviders(hostname string, data config.Data, provider
 			OS:         runtime.GOOS,
 			Arch:       runtime.GOARCH,
 			Configured: data.OnboardingComplete,
+			Trusted:    true,
 		},
-		NearbyDevices:       []model.Device{},
+		NearbyDevices:       s.nearby(),
+		PairedDevices:       s.paired(),
 		Providers:           providers,
 		SelectedProviderIDs: data.SelectedProviderIDs,
 		Workspaces:          data.Workspaces,

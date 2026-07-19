@@ -23,6 +23,12 @@
         <string>true</string>
         <key>NSHumanReadableCopyright</key>
         <string>{{.Info.Copyright}}</string>
+        <key>NSLocalNetworkUsageDescription</key>
+        <string>Agent X uses your local network to discover your other Agent X devices.</string>
+        <key>NSBonjourServices</key>
+        <array>
+          <string>_agentx._tcp</string>
+        </array>
         {{if .Info.FileAssociations}}
         <key>CFBundleDocumentTypes</key>
         <array>

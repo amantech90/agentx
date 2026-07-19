@@ -108,10 +108,12 @@ func (s *Store) AddWorkspace(workspace model.Workspace) (Data, error) {
 	if err != nil {
 		return Data{}, err
 	}
+	workspace = normalizeWorkspaceIdentity(workspace)
 
 	found := false
 	for index, existing := range data.Workspaces {
-		if existing.ID == workspace.ID || filepath.Clean(existing.RootPath) == filepath.Clean(workspace.RootPath) {
+		sameProviderFolder := existing.ProviderID == workspace.ProviderID && filepath.Clean(existing.RootPath) == filepath.Clean(workspace.RootPath)
+		if existing.ID == workspace.ID || sameProviderFolder {
 			data.Workspaces[index] = workspace
 			found = true
 			break
@@ -146,7 +148,88 @@ func (s *Store) load() (Data, error) {
 	if data.Workspaces == nil {
 		data.Workspaces = []model.Workspace{}
 	}
+	data.Workspaces = normalizeWorkspaceIdentities(data.Workspaces)
 	return data, nil
+}
+
+func normalizeWorkspaceIdentities(workspaces []model.Workspace) []model.Workspace {
+	result := make([]model.Workspace, 0, len(workspaces)+1)
+	for _, workspace := range workspaces {
+		workspace = normalizeWorkspaceIdentity(workspace)
+		result = upsertProviderWorkspace(result, workspace)
+	}
+
+	// V1 stored one shared session.json. If the folder was later opened with a
+	// different provider, recover the original provider as a separate workspace
+	// instead of allowing either history to be overwritten.
+	for _, workspace := range append([]model.Workspace(nil), result...) {
+		legacyProvider := legacySessionProvider(workspace.RootPath)
+		if legacyProvider == "" || legacyProvider == workspace.ProviderID {
+			continue
+		}
+		recovered := workspace
+		recovered.ProviderID = legacyProvider
+		recovered.ID = model.ProviderWorkspaceID(recovered.ProjectID, recovered.ProviderID)
+		result = upsertProviderWorkspace(result, recovered)
+	}
+	return result
+}
+
+func normalizeWorkspaceIdentity(workspace model.Workspace) model.Workspace {
+	workspace.RootPath = filepath.Clean(workspace.RootPath)
+	if strings.TrimSpace(workspace.ProjectID) == "" {
+		workspace.ProjectID = projectIDAt(workspace.RootPath)
+	}
+	if strings.TrimSpace(workspace.ProjectID) == "" {
+		workspace.ProjectID = strings.TrimSpace(workspace.ID)
+	}
+	if workspace.ProjectID != "" && workspace.ProviderID != "" {
+		workspace.ID = model.ProviderWorkspaceID(workspace.ProjectID, workspace.ProviderID)
+	}
+	return workspace
+}
+
+func upsertProviderWorkspace(workspaces []model.Workspace, workspace model.Workspace) []model.Workspace {
+	for index, existing := range workspaces {
+		if existing.ProviderID == workspace.ProviderID && filepath.Clean(existing.RootPath) == filepath.Clean(workspace.RootPath) {
+			workspaces[index] = workspace
+			return workspaces
+		}
+	}
+	return append(workspaces, workspace)
+}
+
+func projectIDAt(rootPath string) string {
+	contents, err := os.ReadFile(filepath.Join(rootPath, ".agentx", "project.json"))
+	if err != nil {
+		return ""
+	}
+	var project struct {
+		ID string `json:"id"`
+	}
+	if json.Unmarshal(contents, &project) != nil {
+		return ""
+	}
+	return strings.TrimSpace(project.ID)
+}
+
+func legacySessionProvider(rootPath string) string {
+	contents, err := os.ReadFile(filepath.Join(rootPath, ".agentx", "session.json"))
+	if err != nil {
+		return ""
+	}
+	var session struct {
+		ProviderID string `json:"providerId"`
+	}
+	if json.Unmarshal(contents, &session) != nil {
+		return ""
+	}
+	switch session.ProviderID {
+	case "claude", "codex":
+		return session.ProviderID
+	default:
+		return ""
+	}
 }
 
 func (s *Store) save(data Data) error {

@@ -34,10 +34,23 @@ func TestCodexParserTurnsJSONEventsIntoChatEvents(t *testing.T) {
 	}
 }
 
+func TestCodexParserNormalizesInProgressCommandsToRunning(t *testing.T) {
+	t.Parallel()
+
+	parser := codexParser{}
+	result, err := parser.Parse([]byte(`{"type":"item.started","item":{"id":"item-running","type":"command_execution","command":"sleep 5","aggregated_output":"","status":"in_progress"}}`))
+	if err != nil {
+		t.Fatalf("Parse(item.started) error = %v", err)
+	}
+	if len(result.Events) != 1 || result.Events[0].Status != "running" {
+		t.Fatalf("events = %#v, want running command", result.Events)
+	}
+}
+
 func TestClaudeParserTurnsStreamJSONIntoChatEvents(t *testing.T) {
 	t.Parallel()
 
-	parser := claudeParser{}
+	parser := claudeParser{workspaceRoot: "/workspace"}
 	initialized, err := parser.Parse([]byte(`{"type":"system","subtype":"init","session_id":"claude-123"}`))
 	if err != nil {
 		t.Fatalf("Parse(init) error = %v", err)
@@ -50,7 +63,7 @@ func TestClaudeParserTurnsStreamJSONIntoChatEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse(tool_use) error = %v", err)
 	}
-	if len(tool.Events) != 1 || tool.Events[0].ID != "tool-1" || tool.Events[0].Title != "Bash" || tool.Events[0].Status != "running" {
+	if len(tool.Events) != 1 || tool.Events[0].ID != "tool-1" || tool.Events[0].Title != "Run go test ./..." || tool.Events[0].Status != "running" {
 		t.Fatalf("tool events = %#v", tool.Events)
 	}
 
@@ -68,5 +81,35 @@ func TestClaudeParserTurnsStreamJSONIntoChatEvents(t *testing.T) {
 	}
 	if len(message.Events) != 1 || message.Events[0].Role != "assistant" || message.Events[0].Content != "All tests pass." {
 		t.Fatalf("message events = %#v", message.Events)
+	}
+}
+
+func TestClaudeParserDescribesFileToolsWithWorkspaceRelativePaths(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		toolName  string
+		input     string
+		wantTitle string
+	}{
+		{name: "read", toolName: "Read", input: `{"file_path":"/workspace/internal/session/parser.go"}`, wantTitle: "Read internal/session/parser.go"},
+		{name: "edit", toolName: "Edit", input: `{"file_path":"/workspace/frontend/src/main.js","old_string":"before","new_string":"after"}`, wantTitle: "Edit frontend/src/main.js"},
+		{name: "glob", toolName: "Glob", input: `{"pattern":"**/*.go","path":"/workspace/internal"}`, wantTitle: "Find **/*.go in internal"},
+		{name: "grep", toolName: "Grep", input: `{"pattern":"tool_use","path":"/workspace"}`, wantTitle: `Search "tool_use" in workspace`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			parser := claudeParser{workspaceRoot: "/workspace"}
+			line := []byte(`{"type":"assistant","message":{"id":"message","content":[{"type":"tool_use","id":"tool","name":"` + test.toolName + `","input":` + test.input + `}]}}`)
+			result, err := parser.Parse(line)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if len(result.Events) != 1 || result.Events[0].Title != test.wantTitle {
+				t.Fatalf("events = %#v, want title %q", result.Events, test.wantTitle)
+			}
+		})
 	}
 }

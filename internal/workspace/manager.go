@@ -70,7 +70,6 @@ func (m *Manager) Open(rootPath, name, providerID string) (model.Workspace, erro
 		}
 	} else {
 		project.Name = name
-		project.ProviderID = providerID
 		project.UpdatedAt = m.now().UTC()
 	}
 
@@ -78,10 +77,11 @@ func (m *Manager) Open(rootPath, name, providerID string) (model.Workspace, erro
 		return model.Workspace{}, err
 	}
 	return model.Workspace{
-		ID:         project.ID,
+		ID:         model.ProviderWorkspaceID(project.ID, providerID),
+		ProjectID:  project.ID,
 		Name:       project.Name,
 		RootPath:   rootPath,
-		ProviderID: project.ProviderID,
+		ProviderID: providerID,
 		CreatedAt:  project.CreatedAt.Format(time.RFC3339Nano),
 		UpdatedAt:  project.UpdatedAt.Format(time.RFC3339Nano),
 	}, nil

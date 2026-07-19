@@ -3,6 +3,8 @@ module agentx
 go 1.25.0
 
 require (
+	github.com/betamos/zeroconf v0.1.7
+	github.com/coder/websocket v1.8.15
 	github.com/wailsapp/wails/v2 v2.13.0
 	golang.org/x/sys v0.44.0
 )
@@ -23,6 +25,7 @@ require (
 	github.com/leaanthony/u v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/miekg/dns v1.1.62 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -33,8 +36,11 @@ require (
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/tools v0.44.0 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.13.0 => /Users/amansingh/go/pkg/mod
