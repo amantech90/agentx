@@ -134,7 +134,7 @@ function trackCurrentSection() {
 const RELEASES_URL = "https://github.com/amantech90/agentx/releases/latest";
 const DIRECT_DOWNLOADS = {
   macos: `${RELEASES_URL}/download/AgentX-macOS.zip`,
-  windows: `${RELEASES_URL}/download/AgentX-Windows-Setup.exe`,
+  windows: `${RELEASES_URL}/download/AgentX-Windows.exe`,
 };
 
 document.querySelectorAll("[data-download]").forEach((button) => {
