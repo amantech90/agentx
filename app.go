@@ -96,6 +96,7 @@ func NewApp() (*App, error) {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	preventAppNap()
 	a.emitState = func(state model.BootstrapState) {
 		runtime.EventsEmit(ctx, "agentx:state", state)
 	}

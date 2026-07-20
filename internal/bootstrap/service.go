@@ -15,7 +15,7 @@ import (
 // Version is the current Agent X build, compared against the latest GitHub
 // release to decide whether to prompt for an update. Keep it in sync with the
 // release tag.
-const Version = "1.1.0"
+const Version = "1.1.1"
 
 type Service struct {
 	store    *config.Store

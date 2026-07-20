@@ -30,6 +30,17 @@ const (
 	maximumProviders     = 50
 )
 
+// bridgePingInterval keeps the peer websocket warm. Consumer routers and Wi-Fi
+// extenders drop idle TCP flows after as little as a minute, which would
+// silently strand the connection (a half-open socket never surfaces an error
+// to Read). A regular ping/pong keeps the NAT mapping alive and detects a dead
+// peer within bridgePingTimeout so the dialer reconnects. They are vars so
+// tests can shorten them.
+var (
+	bridgePingInterval = 15 * time.Second
+	bridgePingTimeout  = 8 * time.Second
+)
+
 type pendingCall struct {
 	deviceID string
 	result   chan envelope
@@ -514,6 +525,7 @@ func (s *Service) servePeer(ctx context.Context, device model.Device, connection
 		peer.close(websocket.StatusNormalClosure, "bridge connection closed")
 		s.unregisterPeer(peer)
 	}()
+	go s.heartbeat(ctx, peer)
 	s.sendStateTo(ctx, peer)
 	for {
 		messageType, payload, err := connection.Read(ctx)
@@ -532,6 +544,31 @@ func (s *Service) servePeer(ctx context.Context, device model.Device, connection
 			return
 		}
 		s.handleEnvelope(peer, message)
+	}
+}
+
+// heartbeat pings the peer on an interval to keep the connection alive across
+// NAT/router idle timeouts and to detect a dead peer promptly. A failed ping
+// closes the connection, which unblocks servePeer's Read and — for the dialing
+// side — lets dialLoop reconnect.
+func (s *Service) heartbeat(ctx context.Context, peer *peerConnection) {
+	ticker := time.NewTicker(bridgePingInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-peer.done:
+			return
+		case <-ticker.C:
+			pingCtx, cancel := context.WithTimeout(ctx, bridgePingTimeout)
+			err := peer.conn.Ping(pingCtx)
+			cancel()
+			if err != nil {
+				peer.close(websocket.StatusGoingAway, "bridge heartbeat timed out")
+				return
+			}
+		}
 	}
 }
 
