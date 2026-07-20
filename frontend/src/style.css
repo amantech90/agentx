@@ -960,10 +960,17 @@ input:focus-visible {
 
 .sidebar-footer {
   min-width: 0;
-  min-height: 77px;
   margin-top: auto;
-  padding: 12px 14px;
+  padding: 12px 14px 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sidebar-version {
+  margin: 8px 8px 0;
+  color: #6f6f6f;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .app-main {

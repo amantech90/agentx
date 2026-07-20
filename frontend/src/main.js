@@ -384,6 +384,23 @@ function renderDeviceSections() {
     ${renderNearbyDevices()}`;
 }
 
+// bindWorkspaceRows attaches the open-workspace click handler to every
+// workspace row. It is guarded so it can run after a full render and again
+// after a partial device-section refresh without double-binding rows whose
+// DOM survived the refresh (e.g. the local device's own workspaces).
+function bindWorkspaceRows(scope = document) {
+  scope.querySelectorAll("[data-workspace-id]").forEach((button) => {
+    if (button.dataset.rowBound) return;
+    button.dataset.rowBound = "1";
+    button.addEventListener("click", () => {
+      selectedDeviceID = button.dataset.deviceId;
+      selectedWorkspaceID = button.dataset.workspaceId;
+      renderShell();
+      loadWorkspaceSession(selectedDeviceID, selectedWorkspaceID);
+    });
+  });
+}
+
 function bindDeviceSectionActions() {
   document.querySelectorAll("[data-pair-device]").forEach((button) => {
     button.addEventListener("click", () => requestPairing(button.dataset.pairDevice));
@@ -394,6 +411,10 @@ function bindDeviceSectionActions() {
   document.querySelectorAll("[data-retry-device-search]").forEach((button) => {
     button.addEventListener("click", () => deviceSearch.retry());
   });
+  // Remote workspaces re-rendered by refreshDeviceSections() need their open
+  // handler re-attached — otherwise a paired device's projects aren't clickable
+  // until a full renderShell (which is why forget + re-add "fixes" it).
+  bindWorkspaceRows(document.querySelector("#deviceSections") || document);
 }
 
 function refreshDeviceSections() {
@@ -844,6 +865,7 @@ function renderShell() {
           <button class="new-workspace new-workspace--footer" id="newWorkspace" type="button">
             <span>${icon("plus")}</span><strong>New workspace</strong>${icon("arrow")}
           </button>
+          <p class="sidebar-version">Agent X v${escapeHTML(state.version || "")}</p>
         </footer>
       </aside>
 
@@ -862,14 +884,7 @@ function renderShell() {
 
     <div class="app-notice ${notice?.isError ? "is-error" : ""}" id="appNotice" role="status" ${notice ? "" : "hidden"}>${notice ? escapeHTML(notice.message) : ""}</div>`;
 
-  document.querySelectorAll("[data-workspace-id]").forEach((button) => {
-    button.addEventListener("click", () => {
-      selectedDeviceID = button.dataset.deviceId;
-      selectedWorkspaceID = button.dataset.workspaceId;
-      renderShell();
-      loadWorkspaceSession(selectedDeviceID, selectedWorkspaceID);
-    });
-  });
+  bindWorkspaceRows();
   document.querySelector("#newWorkspace")?.addEventListener("click", showWorkspaceDialog);
   document.querySelector("#openWorkspace")?.addEventListener("click", showWorkspaceDialog);
   document.querySelector("#refreshApp")?.addEventListener("click", refreshProviders);
