@@ -11,6 +11,55 @@ const (
 	remoteDeviceID = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 )
 
+func TestSelectEndpointPrefersLANOverTunnelAddresses(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name  string
+		addrs []string
+		want  string
+	}{
+		{
+			name:  "lan address wins when advertised after tunnels",
+			addrs: []string{"fe80::1", "100.101.102.103", "2001:db8::5", "192.168.0.172"},
+			want:  "192.168.0.172:41938",
+		},
+		{
+			name:  "carrier-grade nat loses to lan even when listed first",
+			addrs: []string{"100.64.5.5", "10.0.0.9"},
+			want:  "10.0.0.9:41938",
+		},
+		{
+			name:  "global ipv4 used only when no private lan address exists",
+			addrs: []string{"2001:db8::7", "203.0.113.10"},
+			want:  "203.0.113.10:41938",
+		},
+		{
+			name:  "tunnel address used as a last resort over ipv6",
+			addrs: []string{"fe80::9", "100.100.100.100"},
+			want:  "100.100.100.100:41938",
+		},
+		{
+			name:  "link-local and loopback are never selected",
+			addrs: []string{"169.254.1.1", "127.0.0.1"},
+			want:  "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			addrs := make([]netip.Addr, 0, len(tc.addrs))
+			for _, raw := range tc.addrs {
+				addrs = append(addrs, netip.MustParseAddr(raw))
+			}
+			if got := selectEndpoint(addrs, 41938); got != tc.want {
+				t.Fatalf("selectEndpoint(%v) = %q, want %q", tc.addrs, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestParseDeviceTXTValidatesUntrustedMetadata(t *testing.T) {
 	t.Parallel()
 

@@ -338,24 +338,60 @@ func bridgePortFromTXT(records []string) uint16 {
 	return 0
 }
 
+// carrierNAT is the shared address space (RFC 6598) that Tailscale and
+// carrier-grade NAT hand out. It looks routable but is almost never reachable
+// between two machines on a plain LAN, so it must lose to real LAN addresses.
+var carrierNAT = netip.MustParsePrefix("100.64.0.0/10")
+
+// selectEndpoint chooses which advertised address a paired device should dial.
+// A machine running VPNs advertises an address on every interface — Tailscale,
+// corporate tunnels, link-local, IPv6 — and picking the wrong one leaves the
+// device paired but permanently offline because the bridge dial never reaches
+// it. Addresses are ranked so a real private-LAN IPv4 (192.168/16, 10/8,
+// 172.16/12) always wins over tunnel and non-LAN addresses.
 func selectEndpoint(addresses []netip.Addr, port uint16) string {
 	if port == 0 {
 		return ""
 	}
-	valid := func(address netip.Addr) bool {
-		return address.IsValid() && !address.IsUnspecified() && !address.IsLoopback() && !address.IsMulticast()
-	}
+	best := netip.Addr{}
+	bestScore := -1
 	for _, address := range addresses {
-		if valid(address) && address.Is4() {
-			return netip.AddrPortFrom(address, port).String()
+		score := endpointScore(address)
+		if score < 0 {
+			continue
+		}
+		if bestScore < 0 || score < bestScore {
+			best = address.Unmap()
+			bestScore = score
 		}
 	}
-	for _, address := range addresses {
-		if valid(address) {
-			return netip.AddrPortFrom(address, port).String()
-		}
+	if bestScore < 0 {
+		return ""
 	}
-	return ""
+	return netip.AddrPortFrom(best, port).String()
+}
+
+// endpointScore ranks an advertised address by how likely it is to be
+// reachable across a shared local network. Lower is better; a negative score
+// means the address is unusable and must be skipped entirely.
+func endpointScore(address netip.Addr) int {
+	address = address.Unmap()
+	if !address.IsValid() || address.IsUnspecified() || address.IsLoopback() ||
+		address.IsMulticast() || address.IsLinkLocalUnicast() || address.IsLinkLocalMulticast() {
+		return -1
+	}
+	switch {
+	case address.Is4() && address.IsPrivate():
+		return 0 // real LAN: 192.168/16, 10/8, 172.16/12
+	case address.Is4() && carrierNAT.Contains(address):
+		return 3 // 100.64/10 — Tailscale / carrier-grade NAT tunnel
+	case address.Is4():
+		return 1 // other global IPv4
+	case address.IsPrivate():
+		return 4 // IPv6 unique-local (fc00::/7)
+	default:
+		return 5 // global IPv6
+	}
 }
 
 func validLocalDevice(device model.Device) bool {
