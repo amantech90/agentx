@@ -6,6 +6,8 @@ export function ApprovePairing(arg1:string):Promise<model.PairingSnapshot>;
 
 export function Bootstrap():Promise<model.BootstrapState>;
 
+export function CheckForUpdate():Promise<model.UpdateInfo>;
+
 export function BridgeState():Promise<model.BridgeSnapshot>;
 
 export function CompleteOnboarding(arg1:model.OnboardingRequest):Promise<model.BootstrapState>;

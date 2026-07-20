@@ -2,6 +2,7 @@ import "./style.css";
 import {
   ApprovePairing,
   Bootstrap,
+  CheckForUpdate,
   CompleteOnboarding,
   DeleteWorkspaceConversation,
   GetWorkspaceSession,
@@ -1440,10 +1441,55 @@ async function start() {
     if (!state.needsOnboarding) deviceSearch.start();
     render();
     if (selectedWorkspaceID) await loadWorkspaceSession(selectedDeviceID, selectedWorkspaceID);
+    checkForUpdate();
   } catch (error) {
     root.innerHTML = `<main class="fatal-error"><span class="brand-mark">${icon("brand")}</span><h1>Agent X could not start.</h1><p>${escapeHTML(String(error))}</p><button type="button" id="retryStart">Try again</button></main>`;
     document.querySelector("#retryStart")?.addEventListener("click", start);
   }
+}
+
+const UPDATE_DISMISS_KEY = "agentx.update.dismissed";
+
+async function checkForUpdate() {
+  try {
+    const info = await CheckForUpdate();
+    if (!info?.available || !info.latest) return;
+    let dismissed = "";
+    try {
+      dismissed = window.localStorage.getItem(UPDATE_DISMISS_KEY) || "";
+    } catch {}
+    if (dismissed === info.latest) return;
+    showUpdateBanner(info);
+  } catch {
+    // Best effort — a failed check simply shows nothing.
+  }
+}
+
+function showUpdateBanner(info) {
+  document.querySelector("#updateBanner")?.remove();
+  const banner = document.createElement("div");
+  banner.id = "updateBanner";
+  banner.className = "update-banner";
+  banner.setAttribute("role", "status");
+  banner.innerHTML = `
+    <span class="update-banner__dot" aria-hidden="true"></span>
+    <div class="update-banner__copy">
+      <strong>Update available</strong>
+      <small>Agent X ${escapeHTML(info.latest)} is ready · you have ${escapeHTML(info.current || "this build")}</small>
+    </div>
+    <button type="button" class="update-banner__get" id="updateGet">Get update</button>
+    <button type="button" class="update-banner__close" id="updateDismiss" aria-label="Dismiss">${icon("close")}</button>`;
+  document.body.appendChild(banner);
+
+  document.querySelector("#updateGet")?.addEventListener("click", () => {
+    if (info.url) BrowserOpenURL(info.url);
+  });
+  document.querySelector("#updateDismiss")?.addEventListener("click", () => {
+    try {
+      window.localStorage.setItem(UPDATE_DISMISS_KEY, info.latest);
+    } catch {}
+    banner.remove();
+  });
 }
 
 start();

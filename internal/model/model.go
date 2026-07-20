@@ -41,6 +41,15 @@ type Workspace struct {
 	UpdatedAt  string `json:"updatedAt"`
 }
 
+// UpdateInfo reports whether a newer Agent X release is available.
+type UpdateInfo struct {
+	Available bool   `json:"available"`
+	Current   string `json:"current"`
+	Latest    string `json:"latest"`
+	URL       string `json:"url"`
+	Notes     string `json:"notes"`
+}
+
 type BootstrapState struct {
 	Version             string              `json:"version"`
 	NeedsOnboarding     bool                `json:"needsOnboarding"`

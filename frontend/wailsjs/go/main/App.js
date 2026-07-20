@@ -10,6 +10,10 @@ export function Bootstrap() {
   return window['go']['main']['App']['Bootstrap']();
 }
 
+export function CheckForUpdate() {
+  return window['go']['main']['App']['CheckForUpdate']();
+}
+
 export function BridgeState() {
   return window['go']['main']['App']['BridgeState']();
 }

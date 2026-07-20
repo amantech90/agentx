@@ -12,7 +12,10 @@ import (
 	"agentx/internal/provider"
 )
 
-const appVersion = "0.1.0"
+// Version is the current Agent X build, compared against the latest GitHub
+// release to decide whether to prompt for an update. Keep it in sync with the
+// release tag.
+const Version = "1.0.0"
 
 type Service struct {
 	store    *config.Store
@@ -95,7 +98,7 @@ func (s *Service) stateFromData(ctx context.Context, hostname string, data confi
 
 func (s *Service) stateFromProviders(hostname string, data config.Data, providers []model.Provider) model.BootstrapState {
 	return model.BootstrapState{
-		Version:         appVersion,
+		Version:         Version,
 		NeedsOnboarding: !data.OnboardingComplete,
 		Device: model.Device{
 			ID:         data.DeviceID,

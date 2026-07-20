@@ -16,6 +16,7 @@ import (
 	"agentx/internal/pairing"
 	"agentx/internal/provider"
 	"agentx/internal/session"
+	"agentx/internal/update"
 	"agentx/internal/workspace"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -28,6 +29,7 @@ type App struct {
 	discovery  *devicediscovery.Service
 	pairing    *pairing.Service
 	bridge     *workspacebridge.Service
+	updates    *update.Checker
 	pickFolder func(context.Context, runtime.OpenDialogOptions) (string, error)
 	emitState  func(model.BootstrapState)
 }
@@ -64,6 +66,7 @@ func NewApp() (*App, error) {
 		discovery:  discoveryService,
 		pairing:    pairingService,
 		bridge:     bridgeService,
+		updates:    update.NewChecker(),
 		pickFolder: runtime.OpenDirectoryDialog,
 		emitState:  func(model.BootstrapState) {},
 	}
@@ -141,6 +144,28 @@ func (a *App) shutdown(context.Context) {
 
 func (a *App) Bootstrap() (model.BootstrapState, error) {
 	return a.state(a.context())
+}
+
+// CheckForUpdate compares this build against the latest GitHub release. It is
+// best effort: on any failure it returns Available=false so the UI simply
+// shows nothing.
+func (a *App) CheckForUpdate() model.UpdateInfo {
+	if a.updates == nil {
+		return model.UpdateInfo{Current: bootstrap.Version}
+	}
+	ctx, cancel := context.WithTimeout(a.context(), 8*time.Second)
+	defer cancel()
+	info, err := a.updates.Check(ctx, bootstrap.Version)
+	if err != nil {
+		return model.UpdateInfo{Current: bootstrap.Version}
+	}
+	return model.UpdateInfo{
+		Available: info.Available,
+		Current:   info.Current,
+		Latest:    info.Latest,
+		URL:       info.URL,
+		Notes:     info.Notes,
+	}
 }
 
 func (a *App) CompleteOnboarding(request model.OnboardingRequest) (model.BootstrapState, error) {
