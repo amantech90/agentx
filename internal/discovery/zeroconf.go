@@ -43,6 +43,7 @@ func (zeroconfTransport) Start(ctx context.Context, device model.Device, appVers
 	service.Text = text
 
 	client, err := zeroconf.New().
+		Interfaces(lanInterfaces).
 		Publish(service).
 		Expiry(deviceTimeout).
 		Browse(func(event zeroconf.Event) {
