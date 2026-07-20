@@ -636,14 +636,10 @@ func parseCodexAppServerNotification(envelope codexRPCEnvelope, messageText, com
 			Tool             string          `json:"tool"`
 		} `json:"item"`
 		Turn struct {
-			Status string `json:"status"`
-			Error  *struct {
-				Message string `json:"message"`
-			} `json:"error"`
+			Status string      `json:"status"`
+			Error  *codexError `json:"error"`
 		} `json:"turn"`
-		Error *struct {
-			Message string `json:"message"`
-		} `json:"error"`
+		Error *codexError `json:"error"`
 	}
 	if len(envelope.Params) > 0 {
 		if err := json.Unmarshal(envelope.Params, &params); err != nil {

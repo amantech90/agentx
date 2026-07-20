@@ -8,6 +8,32 @@ import (
 	"strings"
 )
 
+// codexError decodes Codex's "error" field, which the app-server sends either
+// as a bare string ("error": "boom") or as an object ("error": {"message":
+// "boom"}). Both shapes populate Message so downstream handlers can read it
+// uniformly instead of failing to unmarshal one form or the other.
+type codexError struct {
+	Message string
+}
+
+func (e *codexError) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
+	if len(data) == 0 || string(data) == "null" {
+		return nil
+	}
+	if data[0] == '"' {
+		return json.Unmarshal(data, &e.Message)
+	}
+	var object struct {
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(data, &object); err != nil {
+		return err
+	}
+	e.Message = object.Message
+	return nil
+}
+
 type ParseResult struct {
 	ProviderSessionID string
 	Events            []Event
@@ -23,11 +49,9 @@ func (codexParser) Parse(line []byte) (ParseResult, error) {
 	var envelope struct {
 		Type     string `json:"type"`
 		ThreadID string `json:"thread_id"`
-		Message  string `json:"message"`
-		Error    struct {
-			Message string `json:"message"`
-		} `json:"error"`
-		Item struct {
+		Message  string     `json:"message"`
+		Error    codexError `json:"error"`
+		Item     struct {
 			ID               string          `json:"id"`
 			Type             string          `json:"type"`
 			Text             string          `json:"text"`
